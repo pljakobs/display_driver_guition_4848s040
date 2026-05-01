@@ -6,4 +6,7 @@ idf_component_register(
     REQUIRES
         esp_lcd
         esp_lcd_adapter
+        esp_lcd_st7701
+        esp_lcd_panel_io_additions
+        esp_driver_gpio
 )

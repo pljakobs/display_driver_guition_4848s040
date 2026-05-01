@@ -4,4 +4,7 @@ url: "https://example.local/display_driver_guition_4848s040"
 license: "Proprietary"
 dependencies:
   idf:
-    version: ">=5.1.0"
+    version: ">=5.1.0"  espressif/esp_lcd_st7701:
+    version: "^2.0.2"
+  espressif/esp_lcd_panel_io_additions:
+    version: "*"
