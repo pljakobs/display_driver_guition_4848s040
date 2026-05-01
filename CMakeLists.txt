@@ -1,0 +1,9 @@
+idf_component_register(
+    SRCS
+        "src/display_driver_guition_4848s040.c"
+    INCLUDE_DIRS
+        "include"
+    REQUIRES
+        esp_lcd
+        esp_lcd_adapter
+)

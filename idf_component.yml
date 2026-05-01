@@ -1,0 +1,7 @@
+version: "0.1.0"
+description: "Display driver component for Guition ESP32-S3-4848S040"
+url: "https://example.local/display_driver_guition_4848s040"
+license: "Proprietary"
+dependencies:
+  idf:
+    version: ">=5.1.0"
