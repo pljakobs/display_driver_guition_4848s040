@@ -53,6 +53,19 @@ esp_err_t display_driver_guition_4848s040_destroy(display_driver_t *driver);
 const display_driver_guition_4848s040_config_t *display_driver_guition_4848s040_get_config(
     const display_driver_t *driver);
 
+/**
+ * Get a direct pointer to the RGB panel's PSRAM framebuffer.
+ * Use this to write pixel data directly when draw_bitmap isn't sufficient.
+ * Call esp_cache_msync or just let the bounce-buffer task pick up the write.
+ *
+ * @param driver  Driver handle (must be initialised)
+ * @param fb_ptr  Out: pointer to the framebuffer (RGB565, width*height*2 bytes)
+ * @return ESP_OK on success
+ */
+esp_err_t display_driver_guition_4848s040_get_framebuffer(
+    const display_driver_t *driver,
+    void **fb_ptr);
+
 #ifdef __cplusplus
 }
 #endif

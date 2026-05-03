@@ -25,16 +25,54 @@ static const char *TAG = "guition_4848s040";
 #define GUITION_GPIO_VSYNC     17
 #define GUITION_GPIO_PCLK      21
 
-/* RGB data pins: R0-R4, G0-G5, B0-B4 (16-bit RGB565) */
+/* RGB data pins for 16-bit RGB565 bus:
+ * DATA[0-4]  = B[0-4],  DATA[5-10] = G[0-5],  DATA[11-15] = R[0-4]
+ * Verified against BOARD_JINGCAI_ESP32_4848S040C_I_Y_3.h */
 #define GUITION_RGB_DATA_PINS  \
-    11, 12, 13, 14,  0,        \
+     4,  5,  6,  7, 15,        \
      8, 20,  3, 46,  9, 10,    \
-     4,  5,  6,  7, 15
+    11, 12, 13, 14,  0
 
-/* Extra vendor init command required by GUITION panel (0xCD = pixel format) */
-static const st7701_lcd_init_cmd_t guition_extra_init[] = {
+/* Board-specific ST7701S vendor initialisation sequence.
+ * Taken verbatim from ESP32_Display_Panel BOARD_JINGCAI_ESP32_4848S040C_I_Y_3.h.
+ * Ends with SLPOUT (0x11) + 120 ms; DISPON (0x29) is sent separately via
+ * esp_lcd_panel_disp_on_off() after esp_lcd_panel_init(). */
+static const st7701_lcd_init_cmd_t guition_4848s040_init_cmds[] = {
+    {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x10}, 5, 0},
+    {0xC0, (uint8_t[]){0x3B, 0x00}, 2, 0},
+    {0xC1, (uint8_t[]){0x0D, 0x02}, 2, 0},
+    {0xC2, (uint8_t[]){0x31, 0x05}, 2, 0},
     {0xCD, (uint8_t[]){0x00}, 1, 0},
+    {0xB0, (uint8_t[]){0x00, 0x11, 0x18, 0x0E, 0x11, 0x06, 0x07, 0x08, 0x07, 0x22, 0x04, 0x12, 0x0F, 0xAA, 0x31, 0x18}, 16, 0},
+    {0xB1, (uint8_t[]){0x00, 0x11, 0x19, 0x0E, 0x12, 0x07, 0x08, 0x08, 0x08, 0x22, 0x04, 0x11, 0x11, 0xA9, 0x32, 0x18}, 16, 0},
+    {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x11}, 5, 0},
+    {0xB0, (uint8_t[]){0x60}, 1, 0},
+    {0xB1, (uint8_t[]){0x32}, 1, 0},
+    {0xB2, (uint8_t[]){0x07}, 1, 0},
+    {0xB3, (uint8_t[]){0x80}, 1, 0},
+    {0xB5, (uint8_t[]){0x49}, 1, 0},
+    {0xB7, (uint8_t[]){0x85}, 1, 0},
+    {0xB8, (uint8_t[]){0x21}, 1, 0},
+    {0xC1, (uint8_t[]){0x78}, 1, 0},
+    {0xC2, (uint8_t[]){0x78}, 1, 0},
+    {0xE0, (uint8_t[]){0x00, 0x1B, 0x02}, 3, 0},
+    {0xE1, (uint8_t[]){0x08, 0xA0, 0x00, 0x00, 0x07, 0xA0, 0x00, 0x00, 0x00, 0x44, 0x44}, 11, 0},
+    {0xE2, (uint8_t[]){0x11, 0x11, 0x44, 0x44, 0xED, 0xA0, 0x00, 0x00, 0xEC, 0xA0, 0x00, 0x00}, 12, 0},
+    {0xE3, (uint8_t[]){0x00, 0x00, 0x11, 0x11}, 4, 0},
+    {0xE4, (uint8_t[]){0x44, 0x44}, 2, 0},
+    {0xE5, (uint8_t[]){0x0A, 0xE9, 0xD8, 0xA0, 0x0C, 0xEB, 0xD8, 0xA0, 0x0E, 0xED, 0xD8, 0xA0, 0x10, 0xEF, 0xD8, 0xA0}, 16, 0},
+    {0xE6, (uint8_t[]){0x00, 0x00, 0x11, 0x11}, 4, 0},
+    {0xE7, (uint8_t[]){0x44, 0x44}, 2, 0},
+    {0xE8, (uint8_t[]){0x09, 0xE8, 0xD8, 0xA0, 0x0B, 0xEA, 0xD8, 0xA0, 0x0D, 0xEC, 0xD8, 0xA0, 0x0F, 0xEE, 0xD8, 0xA0}, 16, 0},
+    {0xEB, (uint8_t[]){0x02, 0x00, 0xE4, 0xE4, 0x88, 0x00, 0x40}, 7, 0},
+    {0xEC, (uint8_t[]){0x3C, 0x00}, 2, 0},
+    {0xED, (uint8_t[]){0xAB, 0x89, 0x76, 0x54, 0x02, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x20, 0x45, 0x67, 0x98, 0xBA}, 16, 0},
+    {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x13}, 5, 0},
+    {0xE5, (uint8_t[]){0xE4}, 1, 0},
+    {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x00}, 5, 0},
+    {0x11, NULL, 0, 120},  /* sleep out + 120 ms delay */
 };
+#define GUITION_INIT_CMDS_SIZE (sizeof(guition_4848s040_init_cmds) / sizeof(guition_4848s040_init_cmds[0]))
 
 /**
  * Board-specific runtime state for GUITION-4848S040.
@@ -91,6 +129,23 @@ static esp_err_t guition_4848s040_init(display_driver_handle_t driver,
 
     esp_err_t ret;
 
+    /* -- PSRAM pre-flight check ------------------------------------------- */
+    /* The RGB framebuffer (480x480x2 = 460 800 B) must be allocated from PSRAM
+     * inside esp_lcd_new_rgb_panel().  In ESP-IDF ≤ v5.2.1 the error-cleanup
+     * path in esp_lcd_new_rgb_panel() crashes with a LoadProhibited exception
+     * when that allocation fails because hal.dev is still NULL at that point
+     * (see lcd_rgb_panel_destory()).  Catch a likely failure here, before
+     * touching the LCD peripheral, so the user gets a meaningful error. */
+    {
+        size_t fb_bytes = (size_t)config->width * config->height * 2u;
+        size_t free_psram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+        if (free_psram < fb_bytes) {
+            ESP_LOGE(TAG, "insufficient PSRAM: need %zu B for framebuffer, "
+                     "largest free block is %zu B", fb_bytes, free_psram);
+            return ESP_ERR_NO_MEM;
+        }
+    }
+
     /* -- 3-wire SPI panel IO for ST7701S vendor init ----------------------- */
     spi_line_config_t spi_lines = {
         .cs_io_type   = IO_TYPE_GPIO,
@@ -103,16 +158,20 @@ static esp_err_t guition_4848s040_init(display_driver_handle_t driver,
     };
     esp_lcd_panel_io_3wire_spi_config_t io_cfg =
         ST7701_PANEL_IO_3WIRE_SPI_CONFIG(spi_lines, 0);
+    ESP_LOGI(TAG, "Creating 3-wire SPI IO (CS=%d CLK=%d MOSI=%d)...",
+             GUITION_GPIO_SPI_CS, GUITION_GPIO_SPI_CLK, GUITION_GPIO_SPI_MOSI);
     ret = esp_lcd_new_panel_io_3wire_spi(&io_cfg, &self->io);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "3-wire SPI IO create failed: %d", ret);
         return ret;
     }
+    ESP_LOGI(TAG, "3-wire SPI IO created");
 
     /* -- RGB panel config -------------------------------------------------- */
+    /* Library uses 26 MHz for this panel; timings are tuned for that clock */
     uint32_t pclk    = self->config.pclk_frequency_hz
                            ? self->config.pclk_frequency_hz
-                           : 12000000U;
+                           : 26000000U;
     size_t dma_bufs  = self->config.dma_buffer_size
                            ? self->config.dma_buffer_size
                            : 10;
@@ -132,43 +191,53 @@ static esp_err_t guition_4848s040_init(display_driver_handle_t driver,
         .data_gpio_nums        = {GUITION_RGB_DATA_PINS},
         .timings               = ST7701_480_480_PANEL_60HZ_RGB_TIMING(),
         .flags = {
-            .pclk_active_neg = self->config.pclk_inverted ? 1 : 0,
+            .fb_in_psram = 1,  /* 460 KB framebuffer must live in PSRAM */
         },
     };
     rgb_cfg.timings.pclk_hz = pclk;
+    rgb_cfg.timings.flags.pclk_active_neg = self->config.pclk_inverted ? 1 : 0;
 
     /* -- ST7701S vendor config --------------------------------------------- */
     st7701_vendor_config_t vendor_cfg = {
         .rgb_config     = &rgb_cfg,
-        .init_cmds      = guition_extra_init,
-        .init_cmds_size = sizeof(guition_extra_init) / sizeof(guition_extra_init[0]),
+        .init_cmds      = guition_4848s040_init_cmds,
+        .init_cmds_size = GUITION_INIT_CMDS_SIZE,
         .flags = {
-            .mirror_by_cmd       = 1,
+            .mirror_by_cmd       = 0,
             .enable_io_multiplex = 0,
         },
     };
     const esp_lcd_panel_dev_config_t panel_dev_cfg = {
         .reset_gpio_num = -1,
         .rgb_ele_order  = LCD_RGB_ELEMENT_ORDER_RGB,
-        .bits_per_pixel = 16,
+        /* Match ESP32_Display_Panel reference for this board:
+         * RGB bus transfers RGB565 on 16 data lines, while the panel device
+         * itself is configured as RGB666 (18 bpp). */
+        .bits_per_pixel = 18,
         .vendor_config  = &vendor_cfg,
     };
 
+    ESP_LOGI(TAG, "Creating ST7701 panel (pclk=%"PRIu32" Hz, fb_in_psram=1)...", pclk);
     ret = esp_lcd_new_panel_st7701(self->io, &panel_dev_cfg, &self->panel);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "ST7701S panel create failed: %d", ret);
         goto fail_io;
     }
+    ESP_LOGI(TAG, "ST7701 panel created, resetting...");
 
     ret = esp_lcd_panel_reset(self->panel);
-    if (ret != ESP_OK) { goto fail_panel; }
+    if (ret != ESP_OK) { ESP_LOGE(TAG, "panel reset failed: %d", ret); goto fail_panel; }
+    ESP_LOGI(TAG, "panel reset OK, initing...");
 
     ret = esp_lcd_panel_init(self->panel);
-    if (ret != ESP_OK) { goto fail_panel; }
+    if (ret != ESP_OK) { ESP_LOGE(TAG, "panel init failed: %d", ret); goto fail_panel; }
+    ESP_LOGI(TAG, "panel init OK, enabling display...");
 
-    /* Mirror to match LVGL default 180° rotation for this panel */
-    ret = esp_lcd_panel_mirror(self->panel, true, true);
-    if (ret != ESP_OK) { goto fail_panel; }
+    /* Send DISPON (0x29) — the board-specific init sequence ends after SLPOUT
+     * without DISPON, so we must turn the display on explicitly. */
+    ret = esp_lcd_panel_disp_on_off(self->panel, true);
+    if (ret != ESP_OK) { ESP_LOGE(TAG, "panel disp_on failed: %d", ret); goto fail_panel; }
+    ESP_LOGI(TAG, "panel display on");
 
     self->flush_done = xSemaphoreCreateBinary();
     if (self->flush_done == NULL) {
@@ -342,4 +411,19 @@ display_driver_guition_4848s040_get_config(const display_driver_t *driver)
     const display_driver_guition_4848s040_t *impl =
         (const display_driver_guition_4848s040_t *)driver->impl;
     return impl ? &impl->config : NULL;
+}
+
+esp_err_t display_driver_guition_4848s040_get_framebuffer(
+    const display_driver_t *driver,
+    void **fb_ptr)
+{
+    if (driver == NULL || fb_ptr == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    const display_driver_guition_4848s040_t *impl =
+        (const display_driver_guition_4848s040_t *)driver->impl;
+    if (impl == NULL || !impl->initialized || impl->panel == NULL) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    return esp_lcd_rgb_panel_get_frame_buffer(impl->panel, 1, fb_ptr);
 }
