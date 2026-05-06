@@ -20,4 +20,5 @@ COMPONENT_CFLAGS   += \
     -I$(IDF_PATH)/components/esp_lcd/include \
     -I$(IDF_PATH)/components/esp_lcd/interface \
     -I$(IDF_PATH)/components/driver/i2c/include \
-    -I$(IDF_PATH)/components/hal/include
+    -I$(IDF_PATH)/components/hal/include \
+    -I$(PROJECT_DIR)/Components/esp-iot-solution/components/expander/io_expander/include
