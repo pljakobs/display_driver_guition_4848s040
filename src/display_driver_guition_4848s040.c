@@ -172,6 +172,12 @@ static esp_err_t guition_4848s040_init(display_driver_handle_t driver,
     uint32_t pclk    = self->config.pclk_frequency_hz
                            ? self->config.pclk_frequency_hz
                            : 26000000U;
+    uint8_t frame_buffer_count = self->config.frame_buffer_count
+                           ? self->config.frame_buffer_count
+                           : 1;
+    if (frame_buffer_count > 2) {
+        frame_buffer_count = 2;
+    }
     size_t dma_bufs  = self->config.dma_buffer_size
                            ? self->config.dma_buffer_size
                            : 10;
@@ -181,7 +187,7 @@ static esp_err_t guition_4848s040_init(display_driver_handle_t driver,
         .psram_trans_align     = 64,
         .data_width            = 16,
         .bits_per_pixel        = 16,
-        .num_fbs               = 1,
+        .num_fbs               = frame_buffer_count,
         .bounce_buffer_size_px = dma_bufs * config->width,
         .de_gpio_num           = GUITION_GPIO_DE,
         .pclk_gpio_num         = GUITION_GPIO_PCLK,
@@ -217,7 +223,8 @@ static esp_err_t guition_4848s040_init(display_driver_handle_t driver,
         .vendor_config  = &vendor_cfg,
     };
 
-    ESP_LOGI(TAG, "Creating ST7701 panel (pclk=%"PRIu32" Hz, fb_in_psram=1)...", pclk);
+    ESP_LOGI(TAG, "Creating ST7701 panel (pclk=%"PRIu32" Hz, fb_in_psram=1, num_fbs=%u)...",
+             pclk, (unsigned)frame_buffer_count);
     ret = esp_lcd_new_panel_st7701(self->io, &panel_dev_cfg, &self->panel);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "ST7701S panel create failed: %d", ret);

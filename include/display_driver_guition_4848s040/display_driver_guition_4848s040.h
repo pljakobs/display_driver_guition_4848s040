@@ -26,6 +26,7 @@ typedef struct {
     uint32_t pclk_frequency_hz;  // Default: 12MHz
     bool pclk_inverted;          // Default: false
     uint32_t dma_buffer_size;    // Bytes; default: computed from resolution
+    uint8_t frame_buffer_count;  // Default: 1 (set 2 for double buffering)
 } display_driver_guition_4848s040_config_t;
 
 typedef struct display_driver_guition_4848s040 display_driver_guition_4848s040_t;
